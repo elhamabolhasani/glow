@@ -25,7 +25,7 @@ class Coupling(nn.Module):
     def forward(self, x, ldj, reverse=False):
         x_change, x_id = x.chunk(2, dim=1)
 
-        st = self.nn(x_id)
+        st = torch.utils.checkpoint.checkpoint(self.nn, x_id)
         s, t = st[:, 0::2, ...], st[:, 1::2, ...]
         s = self.scale * torch.tanh(s)
 

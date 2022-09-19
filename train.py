@@ -59,9 +59,9 @@ def main(args):
     start_epoch = 0
     if args.resume:
         # Load checkpoint.
-        print('Resuming from checkpoint at ckpts/best.pth.tar...')
+        print('ckpts/glow_50.pth.tar')
         assert os.path.isdir('ckpts'), 'Error: no checkpoint directory found!'
-        checkpoint = torch.load('ckpts/best.pth.tar')
+        checkpoint = torch.load('ckpts/glow_50.pth.tar')
         net.load_state_dict(checkpoint['net'])
         global best_loss
         global global_step
@@ -136,17 +136,20 @@ def test(epoch, net, testloader, device, loss_fn, num_samples):
                                      bpd=util.bits_per_dim(x, loss_meter.avg))
             progress_bar.update(x.size(0))
 
-    # Save checkpoint
+        # Save checkpoint
+    print('best_loss ', best_loss)
+    print('loss_meter.avg  ', loss_meter.avg)
     if loss_meter.avg < best_loss:
-        print('Saving...')
-        state = {
-            'net': net.state_dict(),
-            'test_loss': loss_meter.avg,
-            'epoch': epoch,
-        }
-        os.makedirs('ckpts', exist_ok=True)
-        torch.save(state, 'ckpts/best.pth.tar')
         best_loss = loss_meter.avg
+
+    print('Saving...')
+    state = {
+        'net': net.state_dict(),
+        'test_loss': loss_meter.avg,
+        'epoch': epoch,
+    }
+    os.makedirs('ckpts', exist_ok=True)
+    torch.save(state, 'ckpts/glow_' + str(epoch) + '.pth.tar')
 
     # Save samples and data
     images = sample(net, num_samples, device)
@@ -165,14 +168,14 @@ if __name__ == '__main__':
     parser.add_argument('--benchmark', type=str2bool, default=True, help='Turn on CUDNN benchmarking')
     parser.add_argument('--gpu_ids', default=[0], type=eval, help='IDs of GPUs to use')
     parser.add_argument('--lr', default=1e-3, type=float, help='Learning rate')
-    parser.add_argument('--max_grad_norm', type=float, default=-1., help='Max gradient norm for clipping')
+    parser.add_argument('--max_grad_norm', type=float, default=1., help='Max gradient norm for clipping')
     parser.add_argument('--num_channels', '-C', default=512, type=int, help='Number of channels in hidden layers')
     parser.add_argument('--num_levels', '-L', default=3, type=int, help='Number of levels in the Glow model')
     parser.add_argument('--num_steps', '-K', default=32, type=int, help='Number of steps of flow in each level')
     parser.add_argument('--num_epochs', default=100, type=int, help='Number of epochs to train')
     parser.add_argument('--num_samples', default=64, type=int, help='Number of samples at test time')
-    parser.add_argument('--num_workers', default=8, type=int, help='Number of data loader threads')
-    parser.add_argument('--resume', type=str2bool, default=False, help='Resume from checkpoint')
+    parser.add_argument('--num_workers', default=0, type=int, help='Number of data loader threads')
+    parser.add_argument('--resume', type=str2bool, default=True, help='Resume from checkpoint')
     parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
     parser.add_argument('--warm_up', default=500000, type=int, help='Number of steps for lr warm-up')
 
