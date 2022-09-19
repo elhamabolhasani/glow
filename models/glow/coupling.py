@@ -17,25 +17,36 @@ class Coupling(nn.Module):
         mid_channels (int): Number of channels in the intermediate activation
             in NN.
     """
-    def __init__(self, in_channels, mid_channels):
+
+    def __init__(self, in_channels, mid_channels, kind="affine"):
         super(Coupling, self).__init__()
-        self.nn = NN(in_channels, mid_channels, 2 * in_channels)
-        self.scale = nn.Parameter(torch.ones(in_channels, 1, 1))
+        if kind == "affine":
+            self.nn = NN(in_channels, mid_channels, 2 * in_channels)
+            self.scale = nn.Parameter(torch.ones(in_channels, 1, 1))
+        else:  # additive
+            self.nn = NN(in_channels, mid_channels, in_channels)
+        self.kind = kind
 
     def forward(self, x, ldj, reverse=False):
         x_change, x_id = x.chunk(2, dim=1)
+        if self.kind == 'affine':
+            # st = self.nn(x_id)
+            st = torch.utils.checkpoint.checkpoint(self.nn, x_id)
+            s, t = st[:, 0::2, ...], st[:, 1::2, ...]
+            s = self.scale * torch.tanh(s)
 
-        st = torch.utils.checkpoint.checkpoint(self.nn, x_id)
-        s, t = st[:, 0::2, ...], st[:, 1::2, ...]
-        s = self.scale * torch.tanh(s)
-
-        # Scale and translate
-        if reverse:
-            x_change = x_change * s.mul(-1).exp() - t
-            ldj = ldj - s.flatten(1).sum(-1)
-        else:
-            x_change = (x_change + t) * s.exp()
-            ldj = ldj + s.flatten(1).sum(-1)
+            # Scale and translate
+            if reverse:
+                x_change = x_change * s.mul(-1).exp() - t
+                ldj = ldj - s.flatten(1).sum(-1)
+            else:
+                x_change = (x_change + t) * s.exp()
+                ldj = ldj + s.flatten(1).sum(-1)
+        else:  # additive
+            if reverse:
+                x_change = x_change - torch.utils.checkpoint.checkpoint(self.nn, x_id)
+            else:
+                x_change = x_change + torch.utils.checkpoint.checkpoint(self.nn, x_id)
 
         x = torch.cat((x_change, x_id), dim=1)
 
@@ -51,6 +62,7 @@ class NN(nn.Module):
         out_channels (int): Number of channels in the output.
         use_act_norm (bool): Use activation norm rather than batch norm.
     """
+
     def __init__(self, in_channels, mid_channels, out_channels,
                  use_act_norm=False):
         super(NN, self).__init__()

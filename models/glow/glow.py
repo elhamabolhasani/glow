@@ -124,7 +124,7 @@ class _FlowStep(nn.Module):
         # Activation normalization, invertible 1x1 convolution, affine coupling
         self.norm = ActNorm(in_channels, return_ldj=True)
         self.conv = InvConv(in_channels)
-        self.coup = Coupling(in_channels // 2, mid_channels)
+        self.coup = Coupling(in_channels // 2, mid_channels, "additive")
 
     def forward(self, x, sldj=None, reverse=False):
         if reverse:

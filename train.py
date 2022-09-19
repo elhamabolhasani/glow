@@ -136,9 +136,9 @@ def test(epoch, net, testloader, device, loss_fn, num_samples):
                                      bpd=util.bits_per_dim(x, loss_meter.avg))
             progress_bar.update(x.size(0))
 
-        # Save checkpoint
+    # Save checkpoint
     print('best_loss ', best_loss)
-    print('loss_meter.avg  ', loss_meter.avg)
+    print('loss_meter.avg  ', loss_meter.avg )
     if loss_meter.avg < best_loss:
         best_loss = loss_meter.avg
 
@@ -161,14 +161,16 @@ def test(epoch, net, testloader, device, loss_fn, num_samples):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Glow on CIFAR-10')
 
+
     def str2bool(s):
         return s.lower().startswith('t')
+
 
     parser.add_argument('--batch_size', default=64, type=int, help='Batch size per GPU')
     parser.add_argument('--benchmark', type=str2bool, default=True, help='Turn on CUDNN benchmarking')
     parser.add_argument('--gpu_ids', default=[0], type=eval, help='IDs of GPUs to use')
     parser.add_argument('--lr', default=1e-3, type=float, help='Learning rate')
-    parser.add_argument('--max_grad_norm', type=float, default=1., help='Max gradient norm for clipping')
+    parser.add_argument('--max_grad_norm', type=float, default=-1., help='Max gradient norm for clipping')
     parser.add_argument('--num_channels', '-C', default=512, type=int, help='Number of channels in hidden layers')
     parser.add_argument('--num_levels', '-L', default=3, type=int, help='Number of levels in the Glow model')
     parser.add_argument('--num_steps', '-K', default=32, type=int, help='Number of steps of flow in each level')
@@ -183,3 +185,5 @@ if __name__ == '__main__':
     global_step = 0
 
     main(parser.parse_args())
+
+""" two change , num_worker = 0, batch_size = 64"""
